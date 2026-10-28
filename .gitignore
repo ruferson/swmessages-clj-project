@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+public/js
+public/css
+
+# Clojure
+.cpcache/
+.clj-kondo/
+
+# Shadow-cljs
+.shadow-cljs/
+
+# macOS
+.DS_Store
+
+# Local SQLite database (users data)
+holonet_users.db
+*.db
+
+# Calva / LSP
+.calva/
+.lsp/
