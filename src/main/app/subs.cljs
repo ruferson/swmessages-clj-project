@@ -93,6 +93,12 @@
  (fn [db _]
    (:loading-friend-requests? db)))
 
+;; Are friends being loaded?
+(rf/reg-sub
+ :loading-friends?
+ (fn [db _]
+   (:loading-friends? db)))
+
 ;; Is the settings menu open?
 (rf/reg-sub
  :settings-open?

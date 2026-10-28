@@ -31,9 +31,9 @@
          chat-id (:active-chat-id db)]
      (if-not (str/blank? text)
        (-> db
-           (update-in [:chats chat-id :messages] conj {:id (js/Date.now)
-                                                       :sender "Tú"
-                                                       :text text})
+           (update-in [:chats chat-id :messages] (fnil conj []) {:id (.now js/Date)
+                                                                 :sender "Tú"
+                                                                 :text text})
            (assoc :input-text ""))
        db))))
 
@@ -85,23 +85,26 @@
                    :on-success      [:auth-success]
                    :on-failure      [:auth-failure]}})))
 
-;; Event fired when the authentication succeeds
-(rf/reg-event-db
+;; Event fired when authentication (login or register) succeeds
+(rf/reg-event-fx
  :auth-success
- (fn [db [_ response]]
-   (let [user (get response :user)]
-     (-> db
-         (assoc :loading-auth? false)
-         (assoc :authenticated? true)
-         (assoc :current-user user)
-         (assoc-in [:auth-form :password] "")
-         (assoc-in [:auth-form :password-confirmation] "")))))
+ (fn [{:keys [db]} [_ response]]
+   (let [user (get response :user)
+         user-id (:id user)]
+     {:db (-> db
+              (assoc :loading-auth? false)
+              (assoc :authenticated? true)
+              (assoc :current-user user)
+              (assoc-in [:auth-form :password] "")
+              (assoc-in [:auth-form :password-confirmation] ""))
+      :dispatch-n [[:load-friend-requests user-id]
+                   [:load-friends user-id]]})))
 
-;; Event fired when the authentication fails
+;; Event fired when authentication fails
 (rf/reg-event-db
  :auth-failure
  (fn [db [_ response]]
-   (let [error-message (get-in response [:response :message] "Error communicating with the HoloNet")]
+   (let [error-message (get-in response [:response :message] "Error communicating with the server")]
      (-> db
          (assoc :loading-auth? false)
          (assoc :auth-error error-message)))))
@@ -119,9 +122,9 @@
 (rf/reg-event-db
  :toggle-settings
  (fn [db _]
-   (assoc db :settings-open? (not (:settings-open? db)))))
+   (update db :settings-open? not)))
 
-;; Updates the id of the friend the user wants to add
+;; Updates the ID of the friend the user wants to add
 (rf/reg-event-db
  :update-friend-id
  (fn [db [_ value]]
@@ -131,11 +134,11 @@
 (rf/reg-event-fx
  :send-friend-request
  (fn [{:keys [db]} _]
-   (let [current-user-id (:id (:current-user db))
+   (let [current-user-id (get-in db [:current-user :id])
          target-id (str (:friend-id-input db))]
      {:db (assoc db :sending-friend-request? true)
       :http-xhrio {:method          :post
-                   :uri             (str "http://localhost:3000/api/friendship/send")
+                   :uri             "http://localhost:3000/api/friendship/send"
                    :params          {:from-id current-user-id :to-id target-id}
                    :format          (ajax/json-request-format)
                    :response-format (ajax/json-response-format {:keywords? true})
@@ -143,24 +146,27 @@
                    :on-failure      [:friend-request-sent-failed]}})))
 
 ;; Handles the result of sending a friend request
-(rf/reg-event-db
+(rf/reg-event-fx
  :friend-request-sent
- (fn [db [_ _]]
-   (assoc db :sending-friend-request? false :friend-id-input "")))
+ (fn [{:keys [db]} _]
+   (let [user-id (get-in db [:current-user :id])]
+     {:db (assoc db :sending-friend-request? false :friend-id-input "")
+      :dispatch-n [[:load-friend-requests user-id]
+                   [:load-friends user-id]]})))
 
 (rf/reg-event-db
  :friend-request-sent-failed
- (fn [db [_ _]]
+ (fn [db _]
    (assoc db :sending-friend-request? false)))
 
 ;; Loads the pending friend requests of the current user
 (rf/reg-event-fx
  :load-friend-requests
- (fn [{:keys [db]} _]
-   (let [user-id (:id (:current-user db))]
+ (fn [{:keys [db]} [_ user-id]]
+   (let [uid (or user-id (get-in db [:current-user :id]))]
      {:db (assoc db :loading-friend-requests? true)
       :http-xhrio {:method          :get
-                   :uri             (str "http://localhost:3000/api/friendship/users/" user-id "/friends")
+                   :uri             (str "http://localhost:3000/api/friendship/users/" uid "/requests")
                    :response-format (ajax/json-response-format {:keywords? true})
                    :on-success      [:friend-requests-loaded]
                    :on-failure      [:friend-requests-loaded-failed]}})))
@@ -173,8 +179,31 @@
 
 (rf/reg-event-db
  :friend-requests-loaded-failed
- (fn [db [_ _]]
+ (fn [db _]
    (assoc db :friend-requests [] :loading-friend-requests? false)))
+
+;; Loads the friends (contacts) of the current user
+(rf/reg-event-fx
+ :load-friends
+ (fn [{:keys [db]} [_ user-id]]
+   (let [uid (or user-id (get-in db [:current-user :id]))]
+     {:db (assoc db :loading-friends? true)
+      :http-xhrio {:method          :get
+                   :uri             (str "http://localhost:3000/api/friendship/users/" uid "/friends")
+                   :response-format (ajax/json-response-format {:keywords? true})
+                   :on-success      [:friends-loaded]
+                   :on-failure      [:friends-loaded-failed]}})))
+
+(rf/reg-event-db
+ :friends-loaded
+ (fn [db [_ response]]
+   (assoc db :friends (or (get response :friends) [])
+          :loading-friends? false)))
+
+(rf/reg-event-db
+ :friends-loaded-failed
+ (fn [db _]
+   (assoc db :friends [] :loading-friends? false)))
 
 ;; Responds to a friend request (accept or reject)
 (rf/reg-event-fx
@@ -182,19 +211,22 @@
  (fn [{:keys [db]} [_ user-id from-id accept]]
    {:db (assoc db :sending-friend-request? true)
     :http-xhrio {:method          :post
-                 :uri             (str "http://localhost:3000/api/friendship/respond")
+                 :uri             "http://localhost:3000/api/friendship/respond"
                  :params          {:user-id user-id :from-id from-id :accept accept}
                  :format          (ajax/json-request-format)
                  :response-format (ajax/json-response-format {:keywords? true})
                  :on-success      [:friend-request-responded]
                  :on-failure      [:friend-request-responded-failed]}}))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  :friend-request-responded
- (fn [db [_ _]]
-   (assoc db :sending-friend-request? false)))
+ (fn [{:keys [db]} _]
+   (let [user-id (get-in db [:current-user :id])]
+     {:db (assoc db :sending-friend-request? false)
+      :dispatch-n [[:load-friend-requests user-id]
+                   [:load-friends user-id]]})))
 
 (rf/reg-event-db
  :friend-request-responded-failed
- (fn [db [_ _]]
+ (fn [db _]
    (assoc db :sending-friend-request? false)))

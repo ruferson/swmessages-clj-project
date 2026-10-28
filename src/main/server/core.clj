@@ -30,9 +30,9 @@
     (ring/create-resource-handler {:path "/"})
     (ring/create-default-handler))))
 
-;; CORS wrapper to allow connections from the client dev server
+;; CORS wrapper to allow connections from the client dev server only
 (def app
   (wrap-cors app-router
-             :access-control-allow-origin [#".*"]
+             :access-control-allow-origin ["http://localhost:8080"]
              :access-control-allow-methods [:get :post :put :delete :options]
              :access-control-allow-headers ["Content-Type" "Authorization"]))
