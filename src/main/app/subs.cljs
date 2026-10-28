@@ -62,3 +62,39 @@
  :loading-auth?
  (fn [db _]
    (:loading-auth? db)))
+
+;; List of friends (contacts) of the current user
+(rf/reg-sub
+ :friends
+ (fn [db _]
+   (:friends db)))
+
+;; Pending incoming friend requests of the current user
+(rf/reg-sub
+ :friend-requests
+ (fn [db _]
+   (:friend-requests db)))
+
+;; Id the user wants to add as a friend
+(rf/reg-sub
+ :friend-id-input
+ (fn [db _]
+   (:friend-id-input db)))
+
+;; Is a friend request being sent?
+(rf/reg-sub
+ :sending-friend-request?
+ (fn [db _]
+   (:sending-friend-request? db)))
+
+;; Are friend requests being loaded?
+(rf/reg-sub
+ :loading-friend-requests?
+ (fn [db _]
+   (:loading-friend-requests? db)))
+
+;; Is the settings menu open?
+(rf/reg-sub
+ :settings-open?
+ (fn [db _]
+   (:settings-open? db)))

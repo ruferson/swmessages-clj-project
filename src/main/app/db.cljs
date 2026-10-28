@@ -24,4 +24,10 @@
                :password-confirmation ""
                :rank "Piloto de Caza"
                :photo-url nil}
-   :input-text ""})
+   :input-text ""
+   :friends []
+   :friend-requests []
+   :friend-id-input ""
+   :sending-friend-request? false
+   :loading-friend-requests? false
+   :settings-open? false})

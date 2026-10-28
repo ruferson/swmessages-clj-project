@@ -112,3 +112,89 @@
    (-> db
        (assoc :authenticated? false)
        (assoc :current-user nil))))
+
+;; --- FRIEND REQUESTS AND FRIENDS ---
+
+;; Toggles the settings menu visibility
+(rf/reg-event-db
+ :toggle-settings
+ (fn [db _]
+   (assoc db :settings-open? (not (:settings-open? db)))))
+
+;; Updates the id of the friend the user wants to add
+(rf/reg-event-db
+ :update-friend-id
+ (fn [db [_ value]]
+   (assoc db :friend-id-input value)))
+
+;; Sends a friend request to the backend
+(rf/reg-event-fx
+ :send-friend-request
+ (fn [{:keys [db]} _]
+   (let [current-user-id (:id (:current-user db))
+         target-id (str (:friend-id-input db))]
+     {:db (assoc db :sending-friend-request? true)
+      :http-xhrio {:method          :post
+                   :uri             (str "http://localhost:3000/api/friendship/send")
+                   :params          {:from-id current-user-id :to-id target-id}
+                   :format          (ajax/json-request-format)
+                   :response-format (ajax/json-response-format {:keywords? true})
+                   :on-success      [:friend-request-sent]
+                   :on-failure      [:friend-request-sent-failed]}})))
+
+;; Handles the result of sending a friend request
+(rf/reg-event-db
+ :friend-request-sent
+ (fn [db [_ _]]
+   (assoc db :sending-friend-request? false :friend-id-input "")))
+
+(rf/reg-event-db
+ :friend-request-sent-failed
+ (fn [db [_ _]]
+   (assoc db :sending-friend-request? false)))
+
+;; Loads the pending friend requests of the current user
+(rf/reg-event-fx
+ :load-friend-requests
+ (fn [{:keys [db]} _]
+   (let [user-id (:id (:current-user db))]
+     {:db (assoc db :loading-friend-requests? true)
+      :http-xhrio {:method          :get
+                   :uri             (str "http://localhost:3000/api/friendship/users/" user-id "/friends")
+                   :response-format (ajax/json-response-format {:keywords? true})
+                   :on-success      [:friend-requests-loaded]
+                   :on-failure      [:friend-requests-loaded-failed]}})))
+
+(rf/reg-event-db
+ :friend-requests-loaded
+ (fn [db [_ response]]
+   (assoc db :friend-requests (or (get response :requests) [])
+          :loading-friend-requests? false)))
+
+(rf/reg-event-db
+ :friend-requests-loaded-failed
+ (fn [db [_ _]]
+   (assoc db :friend-requests [] :loading-friend-requests? false)))
+
+;; Responds to a friend request (accept or reject)
+(rf/reg-event-fx
+ :respond-friend-request
+ (fn [{:keys [db]} [_ user-id from-id accept]]
+   {:db (assoc db :sending-friend-request? true)
+    :http-xhrio {:method          :post
+                 :uri             (str "http://localhost:3000/api/friendship/respond")
+                 :params          {:user-id user-id :from-id from-id :accept accept}
+                 :format          (ajax/json-request-format)
+                 :response-format (ajax/json-response-format {:keywords? true})
+                 :on-success      [:friend-request-responded]
+                 :on-failure      [:friend-request-responded-failed]}}))
+
+(rf/reg-event-db
+ :friend-request-responded
+ (fn [db [_ _]]
+   (assoc db :sending-friend-request? false)))
+
+(rf/reg-event-db
+ :friend-request-responded-failed
+ (fn [db [_ _]]
+   (assoc db :sending-friend-request? false)))

@@ -55,6 +55,14 @@
     (.setLong stmt 8 (or created-at 0))
     (.executeUpdate stmt)))
 
+(defn fetch-user-by-id [id]
+  (with-open [stmt (.prepareStatement (db) "SELECT * FROM users WHERE id = ?")]
+    (.setString stmt 1 id)
+    (let [rs (.executeQuery stmt)]
+      (if (.next rs)
+        (user-from-rs rs)
+        nil))))
+
 (defn- email-valid? [email]
   (and (string? email)
        (re-matches #".+@.+\..+" email)))
