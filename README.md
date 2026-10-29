@@ -1,94 +1,56 @@
-# HoloNet
+# HoloNet 🛰️
 
-A full-stack messaging web application: a **ClojureScript / Re-frame** frontend with a **Clojure** backend, featuring operator registration, login, and real-time chat channels over WebSocket.
+Una aplicación web de mensajería en tiempo real inspirada en terminales de transmisión galáctica. Construida con una arquitectura de datos unificada en **Clojure (Backend)** y **ClojureScript + Re-frame (Frontend)**, respaldada por la persistencia en **SQLite** y comunicación bidireccional vía **WebSockets**.
 
-## Tech Stack
+---
 
-| Layer     | Technology |
-|-----------|-----------|
-| Frontend  | ClojureScript, Re-frame, Reagent, cljs-ajax, shadow-cljs |
-| Backend   | Clojure, Ring, Reitit, http-kit, Buddy Hashers, SQLite (JDBC) |
-| Realtime  | WebSocket (`/ws`) with active-channel tracking |
+## 🚀 Tecnologías Utilizadas
 
-## Features
+| Capa         | Tecnología              | Descripción                                                                     |
+| :----------- | :---------------------- | :------------------------------------------------------------------------------ |
+| **Frontend** | `ClojureScript`         | Lenguaje compilado a JS con foco en inmutabilidad                               |
+|              | `Re-frame` / `Reagent`  | Arquitectura reactiva unidireccional basada en data-driven UI                   |
+|              | `shadow-cljs`           | Herramienta de compilación e integración del ecosistema JS                      |
+|              | `cljs-ajax`             | Cliente HTTP asíncrono para consumo de API REST                                 |
+| **Backend**  | `Clojure`               | Entorno de ejecución en la JVM                                                  |
+|              | `Ring` / `Reitit`       | Servidor HTTP y enrutador optimizado con middlewares (`Muuntaja`, `Parameters`) |
+|              | `http-kit`              | Servidor HTTP/WebSocket concurrente de alto rendimiento                         |
+|              | `Buddy Hashers`         | Seguridad y encriptación de credenciales (bcrypt)                               |
+|              | `SQLite` (via JDBC)     | Base de datos relacional ligera persistente en disco                            |
+| **Realtime** | `WebSocket` (`/api/ws`) | Canal de baja latencia con registro activo de sockets por operador              |
 
-- Operator registration with validation (name, email format, password strength, confirmation match).
-- Login with hashed passwords (Buddy Hashers) against a persistent SQLite database.
-- Re-frame-powered UI with events, effects and subscriptions.
-- Real-time messaging channels over WebSocket.
+---
 
-## Getting Started
+## ✨ Características Principales
 
-### Prerequisites
+- **Registro de Operadores**: Validación de credenciales en tiempo real (formato de correo, complejidad de encriptación y coincidencia).
+- **Autenticación Segura**: Hash de contraseñas con bcrypt persistido en base de datos SQLite (`holonet_users.db`).
+- **Gestión de Contactos & Amistades**:
+  - Búsqueda y envío de solicitudes de enlace entre operadores.
+  - Gestión de solicitudes entrantes y salientes (Aceptar / Rechazar).
+- **Mensajería en Tiempo Real & Persistencia**:
+  - Canales bidireccionales vía WebSockets.
+  - Historial de mensajes cruzados almacenado en SQLite e indexado por `timestamp`.
+  - Desconexión y limpieza automática de sockets al cerrar sesión para evitar escuchas duplicadas.
+- **Canales de Simulación**: Canales en memoria para pruebas de interfaz rápido en entorno de desarrollo.
 
-- JDK 17+
-- Clojure CLI (`clojure`)
-- Node.js (for shadow-cljs)
+---
 
-### Run the backend
+## 🛠️ Requisitos Previos
+
+Asegúrate de tener instalados los siguientes componentes en tu sistema:
+
+- **JDK 17+**
+- **Clojure CLI** (`clojure`)
+- **Node.js** (v18+) & **npm**
+
+---
+
+## 🏁 Instalación y Ejecución
+
+### 1. Clonar el repositorio
 
 ```bash
-clojure -M:dev -m server
+git clone [https://github.com/tu-usuario/holonet.git](https://github.com/tu-usuario/holonet.git)
+cd holonet
 ```
-
-The API server starts on `http://localhost:3000`.
-
-### Run the frontend
-
-```bash
-npx shadow-cljs watch app
-```
-
-The development server starts on `http://localhost:8080`.
-
-## API
-
-### Register
-
-```
-POST /api/register
-Content-Type: application/json
-
-{
-  "name": "string",
-  "email": "string",
-  "password": "string",
-  "password-confirmation": "string",
-  "rank": "string",
-  "photo-url": "string"
-}
-```
-
-### Login
-
-```
-POST /api/login
-Content-Type: application/json
-
-{
-  "email": "string",
-  "password": "string"
-}
-```
-
-### WebSocket
-
-```
-WS /ws
-```
-
-## Project Structure
-
-```
-src/
-  main/
-    app/       Re-frame frontend (events, subs, db, views)
-    server/    Ring/Reitit backend (API + WebSocket)
-    dev/        Development server entry point
-  shared/      Shared code between frontend and backend
-```
-
-## Notes
-
-- User data is stored in a local SQLite database (`holonet_users.db`, git-ignored).
-- Passwords are stored as bcrypt hashes (Buddy Hashers).
