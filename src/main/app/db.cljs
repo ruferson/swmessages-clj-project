@@ -32,4 +32,5 @@
    :sending-friend-request? false
    :loading-friend-requests? false
    :loading-friends? false
-   :settings-open? false})
+   :settings-open? false
+   :active-chat-messages []})

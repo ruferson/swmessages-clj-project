@@ -7,7 +7,8 @@
 (defn chat-component []
   (let [chat @(rf/subscribe [:active-chat])
         messages @(rf/subscribe [:active-messages])
-        text @(rf/subscribe [:input-text])]
+        text @(rf/subscribe [:input-text])
+        current-user @(rf/subscribe [:current-user])]
     [:div {:style {:flex "1"
                    :min-width "0"
                    :display "flex"
@@ -22,7 +23,7 @@
                     :justify-content "space-between"
                     :box-shadow "0 2px 10px rgba(180, 150, 90, 0.12)"}}
       [:div {:style {:display "flex" :align-items "center" :gap "12px"}}
-       [avatar-badge {:text (or (:initials chat) "CP") :active? true}]
+       [avatar-badge {:text (or (:initials chat) "OP") :active? true}]
        [:div
         [:div {:style {:font-weight "bold"
                        :color (:text-secondary st/colors)
@@ -34,7 +35,7 @@
                        :color (:text-muted st/colors)
                        :font-weight "bold"
                        :letter-spacing "1px"}}
-         (str "CANAL ENLACE // " (str/upper-case (:status chat)))]]]
+         (str "CANAL ENLACE // " (str/upper-case (or (:status chat) "EN LÍNEA")))]]]
 
       [:div {:style {:font-size "10px"
                      :font-family (:font-mono st/colors)
@@ -55,8 +56,10 @@
                     :background "radial-gradient(circle at center, #fffefb 0%, #f7f1e1 100%)"
                     :box-shadow "inset 0 0 25px rgba(212, 175, 55, 0.1)"}}
       (for [message messages]
-        (let [mine? (= (:sender message) "Tú")]
-          ^{:key (:id message)}
+        (let [sender (str (or (:sender-id message) (:sender message)))
+              user-id (str (:id current-user))
+              mine? (or (= sender user-id) (= sender "Tú"))]
+          ^{:key (or (:id message) (:timestamp message) (str (random-uuid)))}
           [:div {:style {:align-self (if mine? "flex-end" "flex-start")
                          :max-width "75%"
                          :padding "10px 16px"
@@ -75,7 +78,7 @@
                           :margin-bottom "3px"
                           :opacity "0.7"
                           :letter-spacing "0.5px"}}
-            (str "TRANSMISIÓN DE " (str/upper-case (:sender message)) " >>")]
+            (str "TRANSMISIÓN DE " (if mine? "TÚ" (str/upper-case (or (:contact chat) "OPERADOR"))) " >>")]
            [:div {:style {:font-size "clamp(13px, 1.1vw, 15px)" :line-height "1.4"}} (:text message)]]))]
 
      ;; Bottom command console

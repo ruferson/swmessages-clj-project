@@ -18,7 +18,6 @@
 
    [avatar-badge {:text (or (:initials request) "OP") :active? false :size "32px"}]
 
-   ;; Info del operador (con ellipsis para no solapar)
    [:div {:style {:flex "1"
                   :min-width "0"
                   :display "flex"
@@ -38,7 +37,6 @@
                    :text-overflow "ellipsis"}}
      (str "ID: " (:id request))]]
 
-   ;; Botones de acción alineados e integrados
    [:div {:style {:display "flex" :gap "4px" :flex-shrink "0"}}
     [:button {:on-click #(rf/dispatch [:respond-friend-request (:id current-user) (:id request) true])
               :disabled sending?
@@ -89,69 +87,40 @@
                    :font-family (:font-mono st/colors)}}
     "PENDIENTE"]])
 
-;; Confirmed contact item
-(defn friend-item [friend current-user]
-  [:div {:style {:display "flex"
-                 :align-items "center"
-                 :gap "8px"
-                 :padding "8px"
-                 :margin-bottom "8px"
-                 :background "rgba(255, 255, 255, 0.65)"
-                 :border (str "1px solid " (:border-light st/colors))
-                 :border-radius "14px"}}
-   [avatar-badge {:text (or (:initials friend) "OP") :active? false}]
-   [:div {:style {:flex "1" :min-width "0" :margin-left "10px"}}
-    [:div {:style {:font-weight "bold"
-                   :color (if (= (:id friend) (:id current-user)) (:text-primary st/colors) (:text-secondary st/colors))
-                   :font-size "clamp(13px, 1.1vw, 15px)"
-                   :white-space "nowrap"
-                   :overflow "hidden"
-                   :text-overflow "ellipsis"}}
-     (:name friend)]
-    [:div {:style {:font-size "10px"
-                   :font-weight "600"
-                   :color "#9e9d98"}} (str "ID: " (:id friend))]]
-   [:button {:on-click #(js/navigator.clipboard.writeText (or (:id friend) ""))
-             :style {:padding "4px 8px"
-                     :background (:border-focus st/colors)
-                     :color "#4a3800"
-                     :border (str "1px solid " (:btn-primary-bdr st/colors))
-                     :border-radius "8px"
-                     :font-size "8px"
-                     :font-weight "bold"
-                     :letter-spacing "0.5px"
-                     :cursor "pointer"}} "COPIAR"]])
-
-(defn chat-item [chat active-chat-id]
-  (let [active-chat? (= (:id chat) active-chat-id)]
-    [:div {:on-click #(rf/dispatch [:select-chat (:id chat)])
+;; Confirmed contact item (Clickable to open chat)
+(defn friend-item [friend active-chat-id]
+  (let [active? (= (:id friend) active-chat-id)]
+    [:div {:on-click #(rf/dispatch [:select-chat (:id friend)])
            :style {:display "flex"
                    :align-items "center"
+                   :gap "8px"
                    :padding "10px"
                    :margin-bottom "8px"
                    :cursor "pointer"
                    :border-radius "16px"
-                   :background (if active-chat?
+                   :background (if active?
                                  "linear-gradient(135deg, #fff59d 0%, #ffe082 100%)"
                                  "rgba(255, 255, 255, 0.65)")
-                   :border (if active-chat?
+                   :border (if active?
                              (str "2px solid " (:btn-primary-bdr st/colors))
                              (str "1px solid " (:border-light st/colors)))
-                   :box-shadow (if active-chat?
+                   :box-shadow (if active?
                                  "0 4px 14px rgba(255, 193, 7, 0.4)"
                                  "none")
                    :transition "all 0.2s ease"}}
-     [avatar-badge {:text (or (:initials chat) "CP") :active? active-chat?}]
-     [:div {:style {:flex "1" :min-width "0" :margin-left "10px"}}
+     [avatar-badge {:text (or (:initials friend) "OP") :active? active?}]
+     [:div {:style {:flex "1" :min-width "0" :margin-left "4px"}}
       [:div {:style {:font-weight "bold"
-                     :color (if active-chat? (:text-primary st/colors) (:text-secondary st/colors))
-                     :font-size "clamp(13px, 1.1vw, 15px)"
+                     :color (:text-primary st/colors)
+                     :font-size "13px"
                      :white-space "nowrap"
                      :overflow "hidden"
                      :text-overflow "ellipsis"}}
-       (:contact chat)]
-      [:div {:style (st/badge-status (= (:status chat) "en línea"))}
-       (str "• " (if (= (:status chat) "en línea") "EN FRECUENCIA" "DESCONECTADO"))]]]))
+       (:name friend)]
+      [:div {:style {:font-size "9px"
+                     :color (:text-muted st/colors)
+                     :font-family (:font-mono st/colors)}}
+       (str "ID: " (:id friend))]]]))
 
 (defn sidebar-component []
   (let [chats @(rf/subscribe [:chats])
@@ -229,21 +198,23 @@
           ^{:key (:id sent-req)}
           [sent-request-item sent-req])])
 
-     ;; Confirmed Friends / Contacts Section
+     ;; Confirmed Friends & Channels Section
      [:div {:style {:flex "1" :overflow-y "auto" :padding "8px"}}
       [:div {:style (assoc st/label-title :margin-bottom "8px")} "CONTACTOS EN FRECUENCIA"]
       (if (seq friends)
         (for [friend friends]
           ^{:key (:id friend)}
-          [friend-item friend current-user])
+          [friend-item friend active-chat-id])
         [:div {:style {:font-size "11px" :color (:text-muted st/colors) :padding "8px"}} "Sin contactos vinculados."])
 
-      ;; Chat Frequencies List
-      [:div {:style {:margin-top "12px"}}
-       [:div {:style (assoc st/label-title :margin-bottom "8px")} "CANALES DE CHAT"]
-       (for [chat chats]
-         ^{:key (:id chat)}
-         [chat-item chat active-chat-id])]]
+      (when (seq chats)
+        [:div {:style {:margin-top "12px"}}
+         [:div {:style (assoc st/label-title :margin-bottom "8px")} "CANALES DE PRUEBA"]
+         (for [chat chats]
+           ^{:key (:id chat)}
+           [friend-item {:id (:id chat)
+                         :name (:contact chat)
+                         :initials (:initials chat)} active-chat-id])])]
 
      ;; Settings Modal
      (when settings-open?

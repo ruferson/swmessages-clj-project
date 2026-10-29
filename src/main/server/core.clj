@@ -2,6 +2,7 @@
   (:require [muuntaja.core :as m]
             [reitit.ring :as ring]
             [reitit.ring.middleware.muuntaja :as muuntaja]
+            [reitit.ring.middleware.parameters :as parameters]
             [ring.middleware.cors :refer [wrap-cors]]
             [server.auth :as auth]
             [server.friendships :as friendships]
@@ -25,9 +26,18 @@
                                                     (friendships/get-friends (get path-params :user-id)))}]
       ["/friendship/users/:user-id/sent-requests" {:get (fn [{:keys [path-params]}]
                                                           (friendships/get-sent-friend-requests (get path-params :user-id)))}]
+
+      ["/messages/history" {:get (fn [request]
+                                   (let [params (or (:query-params request) (:params request))
+                                         user-a (get params "userA")
+                                         user-b (get params "userB")]
+                                     (ws/get-history-handler user-a user-b)))}]
       ["/ws" {:get ws/websocket-handler}]]]
+
     {:data {:muuntaja m/instance
-            :middleware [muuntaja/format-middleware]}})
+            :middleware [parameters/parameters-middleware
+                         muuntaja/format-middleware]}})
+
    (ring/routes
     (ring/create-resource-handler {:path "/"})
     (ring/create-default-handler))))
@@ -35,6 +45,6 @@
 ;; CORS wrapper to allow connections from the client dev server only
 (def app
   (wrap-cors app-router
-             :access-control-allow-origin [#"http://localhost:8080"] ;; Note the regex prefix (#"...")
+             :access-control-allow-origin [#"http://localhost:8080"]
              :access-control-allow-methods [:get :post :put :delete :options]
              :access-control-allow-headers ["Content-Type" "Authorization"]))

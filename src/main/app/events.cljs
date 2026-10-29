@@ -1,8 +1,9 @@
 (ns app.events
-  (:require [app.db :as db]
+  (:require [ajax.core :as ajax]
+            [app.db :as db]
+            [app.ws :as ws-client]
             [clojure.string :as str]
-            [day8.re-frame.http-fx] ;; Enables the :http-xhrio effect
-            [ajax.core :as ajax]
+            [day8.re-frame.http-fx]
             [re-frame.core :as rf]))
 
 ;; Loads the initial database of the application
@@ -11,11 +12,46 @@
  (fn [_ _]
    db/default-db))
 
-;; Updates the currently active chat
-(rf/reg-event-db
+;; Updates the currently active chat and fetches its historical messages from backend
+(rf/reg-event-fx
  :select-chat
- (fn [db [_ chat-id]]
-   (assoc db :active-chat-id chat-id)))
+ (fn [{:keys [db]} [_ friend-id]]
+   (let [current-user-id (get-in db [:current-user :id])
+         target-id (if (keyword? friend-id) (name friend-id) (str friend-id))
+         sender-id (if (keyword? current-user-id) (name current-user-id) (str current-user-id))]
+     (if (get-in db [:chats friend-id])
+       ;; Mock chat fallback (retrieve local messages)
+       {:db (-> db
+                (assoc :active-chat-id friend-id)
+                (assoc :active-chat-messages (get-in db [:chats friend-id :messages] [])))}
+       ;; Real database user chat (fetch from SQLite)
+       {:db (assoc db :active-chat-id friend-id)
+        :http-xhrio {:method          :get
+                     :uri             "http://localhost:3000/api/messages/history"
+                     :params          {:userA sender-id :userB target-id}
+                     :response-format (ajax/json-response-format {:keywords? true})
+                     :on-success      [:chat-history-loaded]
+                     :on-failure      [:chat-history-failed]}}))))
+
+;; Handles successful loading of chat history and normalizes keys
+(rf/reg-event-db
+ :chat-history-loaded
+ (fn [db [_ response]]
+   (let [raw-msgs (or (:messages response) [])
+         normalized-msgs (map (fn [m]
+                                {:id (:id m)
+                                 :sender-id (or (:sender-id m) (:sender_id m))
+                                 :recipient-id (or (:recipient-id m) (:recipient_id m))
+                                 :text (:text m)
+                                 :timestamp (:timestamp m)})
+                              raw-msgs)]
+     (assoc db :active-chat-messages (vec normalized-msgs)))))
+
+;; Handles failure when loading chat history
+(rf/reg-event-db
+ :chat-history-failed
+ (fn [db _]
+   (assoc db :active-chat-messages [])))
 
 ;; Updates the text of the message input field
 (rf/reg-event-db
@@ -23,19 +59,44 @@
  (fn [db [_ text]]
    (assoc db :input-text text)))
 
-;; Sends a new message to the active chat
-(rf/reg-event-db
+;; Sends a direct message over WebSocket
+(rf/reg-event-fx
  :send-message
- (fn [db _]
+ (fn [{:keys [db]} _]
    (let [text (:input-text db)
-         chat-id (:active-chat-id db)]
-     (if-not (str/blank? text)
-       (-> db
-           (update-in [:chats chat-id :messages] (fnil conj []) {:id (.now js/Date)
-                                                                 :sender "Tú"
-                                                                 :text text})
-           (assoc :input-text ""))
-       db))))
+         sender-id (get-in db [:current-user :id])
+         recipient-id (:active-chat-id db)
+         clean-sender (if (keyword? sender-id) (name sender-id) (str sender-id))
+         clean-recipient (if (keyword? recipient-id) (name recipient-id) (str recipient-id))]
+     (when (and (not (str/blank? text)) recipient-id)
+       (ws-client/send-ws-message! clean-sender clean-recipient text))
+     {:db (assoc db :input-text "")})))
+
+;; Handles receiving a direct message over WebSocket in real-time
+(rf/reg-event-db
+ :receive-ws-message
+ (fn [db [_ msg]]
+   (let [active-id (:active-chat-id db)
+         current-id (get-in db [:current-user :id])
+         clean-active (if (keyword? active-id) (name active-id) (str active-id))
+         clean-current (if (keyword? current-id) (name current-id) (str current-id))
+         sender (str (or (:sender-id msg) (:sender_id msg)))
+         recipient (str (or (:recipient-id msg) (:recipient_id msg)))]
+
+     ;; Verificamos y actualizamos tanto el chat activo actual, como el "caché" de canales mock
+     (let [db1 (if (or (and (= sender clean-active) (= recipient clean-current))
+                       (and (= sender clean-current) (= recipient clean-active)))
+                 (update db :active-chat-messages conj msg)
+                 db)
+           ;; Guárdalo en la memoria del contacto si es un canal mock receptor
+           db2 (if (get-in db1 [:chats (keyword recipient)])
+                 (update-in db1 [:chats (keyword recipient) :messages] conj msg)
+                 db1)
+           ;; Guárdalo en la memoria del contacto si es un canal mock emisor
+           db3 (if (get-in db2 [:chats (keyword sender)])
+                 (update-in db2 [:chats (keyword sender) :messages] conj msg)
+                 db2)]
+       db3))))
 
 ;; Switches the authentication form between login and register modes
 (rf/reg-event-db
@@ -85,12 +146,13 @@
                    :on-success      [:auth-success]
                    :on-failure      [:auth-failure]}})))
 
-;; Event fired when authentication (login or register) succeeds
+;; Event fired when authentication succeeds
 (rf/reg-event-fx
  :auth-success
  (fn [{:keys [db]} [_ response]]
    (let [user (get response :user)
          user-id (:id user)]
+     (ws-client/connect! user-id)
      {:db (-> db
               (assoc :loading-auth? false)
               (assoc :authenticated? true)
@@ -98,6 +160,7 @@
               (assoc-in [:auth-form :password] "")
               (assoc-in [:auth-form :password-confirmation] ""))
       :dispatch-n [[:load-friend-requests user-id]
+                   [:load-sent-friend-requests user-id]
                    [:load-friends user-id]]})))
 
 ;; Event fired when authentication fails
@@ -109,12 +172,14 @@
          (assoc :loading-auth? false)
          (assoc :auth-error error-message)))))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  :logout
- (fn [db _]
-   (-> db
-       (assoc :authenticated? false)
-       (assoc :current-user nil))))
+ (fn [{:keys [db]} _]
+   (ws-client/disconnect!)
+   {:db (-> db
+            (assoc :authenticated? false)
+            (assoc :current-user nil)
+            (assoc :active-chat-messages []))}))
 
 ;; --- FRIEND REQUESTS AND FRIENDS ---
 
@@ -152,6 +217,7 @@
    (let [user-id (get-in db [:current-user :id])]
      {:db (assoc db :sending-friend-request? false :friend-id-input "")
       :dispatch-n [[:load-friend-requests user-id]
+                   [:load-sent-friend-requests user-id]
                    [:load-friends user-id]]})))
 
 (rf/reg-event-db
@@ -181,6 +247,27 @@
  :friend-requests-loaded-failed
  (fn [db _]
    (assoc db :friend-requests [] :loading-friend-requests? false)))
+
+;; Loads sent friend requests waiting for approval
+(rf/reg-event-fx
+ :load-sent-friend-requests
+ (fn [{:keys [db]} [_ user-id]]
+   (let [uid (or user-id (get-in db [:current-user :id]))]
+     {:http-xhrio {:method          :get
+                   :uri             (str "http://localhost:3000/api/friendship/users/" uid "/sent-requests")
+                   :response-format (ajax/json-response-format {:keywords? true})
+                   :on-success      [:sent-friend-requests-loaded]
+                   :on-failure      [:sent-friend-requests-loaded-failed]}})))
+
+(rf/reg-event-db
+ :sent-friend-requests-loaded
+ (fn [db [_ response]]
+   (assoc db :sent-friend-requests (or (get response :sent-requests) []))))
+
+(rf/reg-event-db
+ :sent-friend-requests-loaded-failed
+ (fn [db _]
+   (assoc db :sent-friend-requests [])))
 
 ;; Loads the friends (contacts) of the current user
 (rf/reg-event-fx
@@ -224,65 +311,10 @@
    (let [user-id (get-in db [:current-user :id])]
      {:db (assoc db :sending-friend-request? false)
       :dispatch-n [[:load-friend-requests user-id]
+                   [:load-sent-friend-requests user-id]
                    [:load-friends user-id]]})))
 
 (rf/reg-event-db
  :friend-request-responded-failed
  (fn [db _]
    (assoc db :sending-friend-request? false)))
-
-;; Add handlers for loading sent requests
-(rf/reg-event-fx
- :load-sent-friend-requests
- (fn [{:keys [db]} [_ user-id]]
-   (let [uid (or user-id (get-in db [:current-user :id]))]
-     {:http-xhrio {:method          :get
-                   :uri             (str "http://localhost:3000/api/friendship/users/" uid "/sent-requests")
-                   :response-format (ajax/json-response-format {:keywords? true})
-                   :on-success      [:sent-friend-requests-loaded]
-                   :on-failure      [:sent-friend-requests-loaded-failed]}})))
-
-(rf/reg-event-db
- :sent-friend-requests-loaded
- (fn [db [_ response]]
-   (assoc db :sent-friend-requests (or (get response :sent-requests) []))))
-
-(rf/reg-event-db
- :sent-friend-requests-loaded-failed
- (fn [db _]
-   (assoc db :sent-friend-requests [])))
-
-;; Update :auth-success to fetch sent-friend-requests as well
-(rf/reg-event-fx
- :auth-success
- (fn [{:keys [db]} [_ response]]
-   (let [user (get response :user)
-         user-id (:id user)]
-     {:db (-> db
-              (assoc :loading-auth? false)
-              (assoc :authenticated? true)
-              (assoc :current-user user)
-              (assoc-in [:auth-form :password] "")
-              (assoc-in [:auth-form :password-confirmation] ""))
-      :dispatch-n [[:load-friend-requests user-id]
-                   [:load-sent-friend-requests user-id]
-                   [:load-friends user-id]]})))
-
-;; Update :friend-request-sent and :friend-request-responded
-(rf/reg-event-fx
- :friend-request-sent
- (fn [{:keys [db]} _]
-   (let [user-id (get-in db [:current-user :id])]
-     {:db (assoc db :sending-friend-request? false :friend-id-input "")
-      :dispatch-n [[:load-friend-requests user-id]
-                   [:load-sent-friend-requests user-id]
-                   [:load-friends user-id]]})))
-
-(rf/reg-event-fx
- :friend-request-responded
- (fn [{:keys [db]} _]
-   (let [user-id (get-in db [:current-user :id])]
-     {:db (assoc db :sending-friend-request? false)
-      :dispatch-n [[:load-friend-requests user-id]
-                   [:load-sent-friend-requests user-id]
-                   [:load-friends user-id]]})))

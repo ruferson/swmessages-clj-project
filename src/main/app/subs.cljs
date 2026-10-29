@@ -13,19 +13,11 @@
  (fn [db _]
    (:active-chat-id db)))
 
-;; Data of the active chat
-(rf/reg-sub
- :active-chat
- (fn [db _]
-   (get-in db [:chats (:active-chat-id db)])))
-
 ;; Messages of the active chat
 (rf/reg-sub
  :active-messages
  (fn [db _]
-   (rf/subscribe [:active-chat]))
- (fn [chat _]
-   (:messages chat)))
+   (:active-chat-messages db)))
 
 ;; Text of the input field
 (rf/reg-sub
@@ -110,3 +102,20 @@
  :sent-friend-requests
  (fn [db _]
    (:sent-friend-requests db)))
+
+;; Data of the active chat (resolves both mock chats and real friends)
+(rf/reg-sub
+ :active-chat
+ (fn [db _]
+   (let [active-id (:active-chat-id db)
+         mock-chat (get-in db [:chats active-id])
+         friend (first (filter #(= (:id %) active-id) (:friends db)))]
+     (cond
+       mock-chat mock-chat
+       friend {:id (:id friend)
+               :contact (:name friend)
+               :initials (or (:initials friend) "OP")
+               :status "en línea"}
+       :else {:contact "Canal Desconocido"
+              :initials "OP"
+              :status "desconectado"}))))
