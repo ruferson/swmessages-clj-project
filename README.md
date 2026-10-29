@@ -51,6 +51,6 @@ Asegúrate de tener instalados los siguientes componentes en tu sistema:
 ### 1. Clonar el repositorio
 
 ```bash
-git clone [https://github.com/tu-usuario/holonet.git](https://github.com/tu-usuario/holonet.git)
+git clone [https://github.com/tu-usuario/wmessages-clj-project.git](https://github.com/tu-usuario/wmessages-clj-project.git)
 cd holonet
 ```
