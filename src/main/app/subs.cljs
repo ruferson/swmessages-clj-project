@@ -115,7 +115,7 @@
        friend {:id (:id friend)
                :contact (:name friend)
                :initials (or (:initials friend) "OP")
-               :status "en línea"}
-       :else {:contact "Canal Desconocido"
+               :status "online"}
+       :else {:contact "Unknown Channel"
               :initials "OP"
-              :status "desconectado"}))))
+              :status "offline"}))))

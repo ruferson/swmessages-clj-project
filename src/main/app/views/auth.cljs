@@ -58,13 +58,13 @@
                       :font-weight "bold"
                       :color (:text-secondary st/colors)
                       :letter-spacing "1px"}}
-        "SISTEMA DE IDENTIFICACIÓN"]
+        "IDENTIFICATION SYSTEM"]
        [:div {:style {:font-size "11px"
                       :color (:text-muted st/colors)
                       :font-weight "600"
                       :letter-spacing "1px"
                       :margin-top "4px"}}
-        (if is-registration? "REGISTRO OFICIAL DE OPERADOR" "INGRESO A LA FRECUENCIA")]]
+        (if is-registration? "OFFICIAL OPERATOR REGISTRATION" "ENTER FREQUENCY")]]
 
       ;; Server error message
       (when error
@@ -100,7 +100,7 @@
                           :font-weight "bold"
                           :color (:text-primary st/colors)
                           :cursor "pointer"}}
-          "SUBIR HOLO-IMAGEN"
+          "UPLOAD HOLO-IMAGE"
           [:input {:type "file"
                    :accept "image/*"
                    :on-change process-image-file
@@ -110,9 +110,9 @@
       (when is-registration?
         [:div {:style {:display "flex" :flex-direction "column" :gap "4px"}}
          [:label {:style st/label-title}
-          "IDENTIFICADOR DE OPERADOR:"]
+          "OPERATOR IDENTIFIER:"]
          [:input {:type "text"
-                  :placeholder "Ej. Ruben"
+                  :placeholder "e.g. Ruben"
                   :value name
                   :on-change #(rf/dispatch [:update-auth-field :name (.. % -target -value)])
                   :style st/input-field}]])
@@ -120,7 +120,7 @@
       ;; Email field
       [:div {:style {:display "flex" :flex-direction "column" :gap "4px"}}
        [:label {:style st/label-title}
-        "FRECUENCIA / CORREO GALÁCTICO:"]
+        "FREQUENCY / GALACTIC EMAIL:"]
        [:input {:type "email"
                 :placeholder "ruben@holonet.gal"
                 :value email
@@ -131,19 +131,19 @@
       (when is-registration?
         [:div {:style {:display "flex" :flex-direction "column" :gap "4px"}}
          [:label {:style st/label-title}
-          "RANGO EN LA REPÚBLICA:"]
+          "REPUBLIC RANK:"]
          [:select {:value rank
                    :on-change #(rf/dispatch [:update-auth-field :rank (.. % -target -value)])
                    :style st/input-field}
-          [:option {:value "Piloto de Caza"} "Piloto de Caza"]
-          [:option {:value "Oficial de Enlace"} "Oficial de Enlace"]
-          [:option {:value "Comandante de Escuadrón"} "Comandante de Escuadrón"]
-          [:option {:value "Ingeniero Mecánico"} "Ingeniero Mecánico"]]])
+          [:option {:value "Starfighter Pilot"} "Starfighter Pilot"]
+          [:option {:value "Liaison Officer"} "Liaison Officer"]
+          [:option {:value "Squadron Commander"} "Squadron Commander"]
+          [:option {:value "Chief Engineer"} "Chief Engineer"]]])
 
       ;; Encryption code field
       [:div {:style {:display "flex" :flex-direction "column" :gap "4px"}}
        [:label {:style st/label-title}
-        "CÓDIGO DE ENCRIPTACIÓN:"]
+        "ENCRYPTION KEY:"]
        [:input {:type "password"
                 :placeholder "••••••••"
                 :value password
@@ -154,7 +154,7 @@
       (when is-registration?
         [:div {:style {:display "flex" :flex-direction "column" :gap "4px"}}
          [:label {:style st/label-title}
-          "CONFIRMAR CÓDIGO:"]
+          "CONFIRM KEY:"]
          [:input {:type "password"
                   :placeholder "••••••••"
                   :value password-confirmation
@@ -168,8 +168,8 @@
                               :cursor (if loading? "wait" "pointer")
                               :opacity (if loading? "0.6" "1"))}
        (if loading?
-         "CONECTANDO..."
-         (if is-registration? "REGISTRAR OPERADOR" "ESTABLECER ENLACE"))]
+         "CONNECTING..."
+         (if is-registration? "REGISTER OPERATOR" "ESTABLISH LINK"))]
 
       ;; Mode switch
       [:div {:style {:text-align "center" :margin-top "2px"}}
@@ -180,5 +180,5 @@
                        :cursor "pointer"
                        :font-weight "600"}}
         (if is-registration?
-          "¿Ya posees credencial? Iniciar enlace"
-          "¿Sin registrar? Alta de nuevo operador")]]]]))
+          "Already have credentials? Establish link"
+          "Not registered? Register new operator")]]]]))

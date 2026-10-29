@@ -35,7 +35,7 @@
                        :color (:text-muted st/colors)
                        :font-weight "bold"
                        :letter-spacing "1px"}}
-         (str "CANAL ENLACE // " (str/upper-case (or (:status chat) "EN LÍNEA")))]]]
+         (str "LINK CHANNEL // " (str/upper-case (or (:status chat) "ONLINE")))]]]
 
       [:div {:style {:font-size "10px"
                      :font-family (:font-mono st/colors)
@@ -44,7 +44,7 @@
                      :border (str "1px solid " (:border-focus st/colors))
                      :border-radius "6px"
                      :color (:text-secondary st/colors)}}
-       "ENCRIPTACIÓN: CÓDIGO-3"]]
+       "ENCRYPTION: CODE-3"]]
 
      ;; Holographic viewer panel
      [:div {:style {:flex "1"
@@ -58,7 +58,7 @@
       (for [message messages]
         (let [sender (str (or (:sender-id message) (:sender message)))
               user-id (str (:id current-user))
-              mine? (or (= sender user-id) (= sender "Tú"))]
+              mine? (or (= sender user-id) (= sender "You") (= sender "Tú"))]
           ^{:key (or (:id message) (:timestamp message) (str (random-uuid)))}
           [:div {:style {:align-self (if mine? "flex-end" "flex-start")
                          :max-width "75%"
@@ -78,7 +78,7 @@
                           :margin-bottom "3px"
                           :opacity "0.7"
                           :letter-spacing "0.5px"}}
-            (str "TRANSMISIÓN DE " (if mine? "TÚ" (str/upper-case (or (:contact chat) "OPERADOR"))) " >>")]
+            (str "TRANSMISSION FROM " (if mine? "YOU" (str/upper-case (or (:contact chat) "OPERATOR"))) " >>")]
            [:div {:style {:font-size "clamp(13px, 1.1vw, 15px)" :line-height "1.4"}} (:text message)]]))]
 
      ;; Bottom command console
@@ -89,7 +89,7 @@
                     :gap "10px"
                     :align-items "center"}}
       [:input {:type "text"
-               :placeholder "Redactar holomensaje..."
+               :placeholder "Compose holomessage..."
                :value text
                :on-change #(rf/dispatch [:update-input (.. % -target -value)])
                :on-key-down #(when (= (.-key %) "Enter") (rf/dispatch [:send-message]))
@@ -117,4 +117,4 @@
                         :cursor "pointer"
                         :white-space "nowrap"
                         :box-shadow "0 4px 12px rgba(255, 183, 3, 0.45)"}}
-       "TRANSMITIR"]]]))
+       "TRANSMIT"]]]))

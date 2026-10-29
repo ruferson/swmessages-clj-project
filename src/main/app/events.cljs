@@ -83,16 +83,16 @@
          sender (str (or (:sender-id msg) (:sender_id msg)))
          recipient (str (or (:recipient-id msg) (:recipient_id msg)))]
 
-     ;; Verificamos y actualizamos tanto el chat activo actual, como el "caché" de canales mock
+     ;; Verify and update both the currently active chat and the mock channel cache
      (let [db1 (if (or (and (= sender clean-active) (= recipient clean-current))
                        (and (= sender clean-current) (= recipient clean-active)))
                  (update db :active-chat-messages conj msg)
                  db)
-           ;; Guárdalo en la memoria del contacto si es un canal mock receptor
+           ;; Save it to the contact's cache if it is a receiving mock channel
            db2 (if (get-in db1 [:chats (keyword recipient)])
                  (update-in db1 [:chats (keyword recipient) :messages] conj msg)
                  db1)
-           ;; Guárdalo en la memoria del contacto si es un canal mock emisor
+           ;; Save it to the contact's cache if it is a sending mock channel
            db3 (if (get-in db2 [:chats (keyword sender)])
                  (update-in db2 [:chats (keyword sender) :messages] conj msg)
                  db2)]

@@ -49,7 +49,7 @@
                       :font-size "9px"
                       :font-weight "bold"
                       :cursor "pointer"}}
-     "ACEPTAR"]
+     "ACCEPT"]
     [:button {:on-click #(rf/dispatch [:respond-friend-request (:id current-user) (:id request) false])
               :disabled sending?
               :style {:padding "5px 8px"
@@ -61,7 +61,7 @@
                       :font-size "9px"
                       :font-weight "bold"
                       :cursor "pointer"}}
-     "RECHAZAR"]]])
+     "REJECT"]]])
 
 ;; Sent request item (Outbound / Pending)
 (defn sent-request-item [request]
@@ -85,7 +85,7 @@
                    :border "1px solid #ffeeba"
                    :border-radius "8px"
                    :font-family (:font-mono st/colors)}}
-    "PENDIENTE"]])
+    "PENDING"]])
 
 ;; Confirmed contact item (Clickable to open chat)
 (defn friend-item [friend active-chat-id]
@@ -166,10 +166,10 @@
      [:div {:style {:padding "10px 12px"
                     :background (:bg-panel st/colors)
                     :border-bottom (str "1px solid " (:border-light st/colors))}}
-      [:div {:style st/label-title} "AÑADIR OPERADOR"]
+      [:div {:style st/label-title} "ADD OPERATOR"]
       [:div {:style {:display "flex" :gap "6px" :margin-top "6px"}}
        [:input {:type "text"
-                :placeholder "ID (Ej. op-171829)"
+                :placeholder "ID (e.g. op-171829)"
                 :value friend-id-input
                 :on-change #(rf/dispatch [:update-friend-id (.. % -target -value)])
                 :style (assoc st/input-field :padding "6px 10px" :font-size "10px" :flex "1" :min-width "0")}]
@@ -183,7 +183,7 @@
        [:div {:style {:padding "10px 12px"
                       :background (:bg-panel st/colors)
                       :border-bottom (str "1px solid " (:border-light st/colors))}}
-        [:div {:style (assoc st/label-title :margin-bottom "8px")} "SOLICITUDES RECIBIDAS"]
+        [:div {:style (assoc st/label-title :margin-bottom "8px")} "RECEIVED REQUESTS"]
         (for [request friend-requests]
           ^{:key (:id request)}
           [request-item request current-user sending-friend-request?])])
@@ -193,23 +193,23 @@
        [:div {:style {:padding "10px 12px"
                       :background "linear-gradient(180deg, #fdf6e3 0%, #f7ebd0 100%)"
                       :border-bottom (str "1px solid " (:border-light st/colors))}}
-        [:div {:style (assoc st/label-title :margin-bottom "8px")} "SOLICITUDES ENVIADAS"]
+        [:div {:style (assoc st/label-title :margin-bottom "8px")} "SENT REQUESTS"]
         (for [sent-req sent-friend-requests]
           ^{:key (:id sent-req)}
           [sent-request-item sent-req])])
 
      ;; Confirmed Friends & Channels Section
      [:div {:style {:flex "1" :overflow-y "auto" :padding "8px"}}
-      [:div {:style (assoc st/label-title :margin-bottom "8px")} "CONTACTOS EN FRECUENCIA"]
+      [:div {:style (assoc st/label-title :margin-bottom "8px")} "FREQUENCY CONTACTS"]
       (if (seq friends)
         (for [friend friends]
           ^{:key (:id friend)}
           [friend-item friend active-chat-id])
-        [:div {:style {:font-size "11px" :color (:text-muted st/colors) :padding "8px"}} "Sin contactos vinculados."])
+        [:div {:style {:font-size "11px" :color (:text-muted st/colors) :padding "8px"}} "No linked contacts."])
 
       (when (seq chats)
         [:div {:style {:margin-top "12px"}}
-         [:div {:style (assoc st/label-title :margin-bottom "8px")} "CANALES DE PRUEBA"]
+         [:div {:style (assoc st/label-title :margin-bottom "8px")} "TEST CHANNELS"]
          (for [chat chats]
            ^{:key (:id chat)}
            [friend-item {:id (:id chat)
@@ -240,12 +240,12 @@
                         :font-size "16px"
                         :font-weight "bold"
                         :color (:text-secondary st/colors)
-                        :text-align "center"}} "CONFIGURACIÓN DE OPERADOR"]
+                        :text-align "center"}} "OPERATOR SETTINGS"]
          [:div {:style {:font-size "11px"
                         :font-weight "bold"
                         :color (:text-gold st/colors)
                         :text-align "center"
-                        :letter-spacing "0.5px"}} (str "ID DE OPERADOR: " (or (:id current-user) ""))]
+                        :letter-spacing "0.5px"}} (str "OPERATOR ID: " (or (:id current-user) ""))]
          [:div {:style {:display "flex"
                         :gap "8px"
                         :justify-content "center"}}
@@ -258,7 +258,7 @@
                             :font-size "10px"
                             :font-weight "bold"
                             :letter-spacing "0.5px"
-                            :cursor "pointer"}} "COPIAR ID"]
+                            :cursor "pointer"}} "COPY ID"]
           [:button {:on-click #(rf/dispatch [:toggle-settings])
                     :style {:padding "8px 14px"
                             :background "#f6ecd5"
@@ -268,7 +268,7 @@
                             :font-size "10px"
                             :font-weight "bold"
                             :letter-spacing "0.5px"
-                            :cursor "pointer"}} "CERRAR"]]]])
+                            :cursor "pointer"}} "CLOSE"]]]])
 
      ;; Sidebar Footer
      [:div {:style {:padding "12px"
@@ -296,7 +296,7 @@
                          :font-weight "bold"
                          :letter-spacing "0.5px"
                          :cursor "pointer"}}
-        "CONFIG"]
+        "SETTINGS"]
        [:button {:on-click #(rf/dispatch [:logout])
                  :style {:padding "6px 10px"
                          :background (:btn-reject st/colors)
@@ -307,4 +307,4 @@
                          :font-weight "bold"
                          :letter-spacing "0.5px"
                          :cursor "pointer"}}
-        "SALIR"]]]]))
+        "LOGOUT"]]]]))

@@ -28,7 +28,7 @@
   (when-not (and (valid-id? from-id) (valid-id? to-id))
     {:status 400
      :body {:success false
-            :message "ID de operador inválido"}}))
+            :message "Invalid operator ID"}}))
 
 (defn- clean-user [user]
   (-> user
@@ -57,19 +57,19 @@
             to-user (auth/fetch-user-by-id to-id)]
         (cond
           (nil? from-user)
-          {:status 404 :body {:success false :message "El operador emisor no existe"}}
+          {:status 404 :body {:success false :message "Sender operator does not exist"}}
 
           (nil? to-user)
-          {:status 404 :body {:success false :message "El operador receptor no existe"}}
+          {:status 404 :body {:success false :message "Recipient operator does not exist"}}
 
           (= from-id to-id)
-          {:status 400 :body {:success false :message "No puedes solicitar enlace contigo mismo"}}
+          {:status 400 :body {:success false :message "You cannot request a link with yourself"}}
 
           (are-friends? from-id to-id)
-          {:status 409 :body {:success false :message "Ya tenéis enlace de amistad establecido"}}
+          {:status 409 :body {:success false :message "Friendship link is already established"}}
 
           (has-pending-request? from-id to-id)
-          {:status 409 :body {:success false :message "Ya hay una solicitud de enlace pendiente enviada a este operador"}}
+          {:status 409 :body {:success false :message "A link request is already pending for this operator"}}
 
           :else
           (do
@@ -79,7 +79,7 @@
               (.executeUpdate stmt))
             {:status 200
              :body {:success true
-                    :message "Solicitud de enlace enviada correctamente"}}))))))
+                    :message "Link request sent successfully"}}))))))
 
 ;; Incoming requests (where to_id = user-id)
 (defn get-friend-requests [user-id]
@@ -100,7 +100,7 @@
                       :requests sender-users}})))))
     {:status 404
      :body {:success false
-            :message "Operador no encontrado"}}))
+            :message "Operator not found"}}))
 
 ;; Outgoing requests (where from_id = user-id)
 (defn get-sent-friend-requests [user-id]
@@ -121,7 +121,7 @@
                       :sent-requests recipient-users}})))))
     {:status 404
      :body {:success false
-            :message "Operador no encontrado"}}))
+            :message "Operator not found"}}))
 
 (defn get-friends [user-id]
   (if (and (valid-id? user-id) (auth/fetch-user-by-id user-id))
@@ -141,7 +141,7 @@
                       :friends friend-users}})))))
     {:status 404
      :body {:success false
-            :message "Operador no encontrado"}}))
+            :message "Operator not found"}}))
 
 (defn respond-friend-request [{:keys [user-id from-id accept]}]
   (let [validation (require-valid-ids user-id from-id)
@@ -151,10 +151,10 @@
       validation
       (cond
         (or (nil? user) (nil? sender))
-        {:status 404 :body {:success false :message "Operador no encontrado"}}
+        {:status 404 :body {:success false :message "Operator not found"}}
 
         (not (has-pending-request? from-id user-id))
-        {:status 404 :body {:success false :message "No existe solicitud de enlace pendiente de este operador"}}
+        {:status 404 :body {:success false :message "No pending link request exists from this operator"}}
 
         accept
         (do
@@ -172,7 +172,7 @@
             (.setString stmt-ins2 1 from-id)
             (.setString stmt-ins2 2 user-id)
             (.executeUpdate stmt-ins2))
-          {:status 200 :body {:success true :message "Enlace de amistad establecido correctamente"}})
+          {:status 200 :body {:success true :message "Friendship link established successfully"}})
 
         :else
         (do
@@ -180,4 +180,4 @@
             (.setString stmt-del 1 from-id)
             (.setString stmt-del 2 user-id)
             (.executeUpdate stmt-del))
-          {:status 200 :body {:success true :message "Solicitud de enlace rechazada"}})))))
+          {:status 200 :body {:success true :message "Link request rejected"}})))))

@@ -1,44 +1,44 @@
 # HoloNet 🛰️
 
-Una aplicación web de mensajería en tiempo real inspirada en terminales de transmisión galáctica. Construida con una arquitectura de datos unificada en **Clojure (Backend)** y **ClojureScript + Re-frame (Frontend)**, respaldada por la persistencia en **SQLite** y comunicación bidireccional vía **WebSockets**.
+A real-time web messaging application inspired by galactic transmission terminals. Built with a unified data architecture using **Clojure (Backend)** and **ClojureScript + Re-frame (Frontend)**, backed by persistent **SQLite** storage and bidirectional communication via **WebSockets**.
 
 ---
 
-## 🚀 Tecnologías Utilizadas
+## 🚀 Tech Stack
 
-| Capa         | Tecnología              | Descripción                                                                     |
+| Layer        | Technology              | Description                                                                     |
 | :----------- | :---------------------- | :------------------------------------------------------------------------------ |
-| **Frontend** | `ClojureScript`         | Lenguaje compilado a JS con foco en inmutabilidad                               |
-|              | `Re-frame` / `Reagent`  | Arquitectura reactiva unidireccional basada en data-driven UI                   |
-|              | `shadow-cljs`           | Herramienta de compilación e integración del ecosistema JS                      |
-|              | `cljs-ajax`             | Cliente HTTP asíncrono para consumo de API REST                                 |
-| **Backend**  | `Clojure`               | Entorno de ejecución en la JVM                                                  |
-|              | `Ring` / `Reitit`       | Servidor HTTP y enrutador optimizado con middlewares (`Muuntaja`, `Parameters`) |
-|              | `http-kit`              | Servidor HTTP/WebSocket concurrente de alto rendimiento                         |
-|              | `Buddy Hashers`         | Seguridad y encriptación de credenciales (bcrypt)                               |
-|              | `SQLite` (via JDBC)     | Base de datos relacional ligera persistente en disco                            |
-| **Realtime** | `WebSocket` (`/api/ws`) | Canal de baja latencia con registro activo de sockets por operador              |
+| **Frontend** | `ClojureScript`         | Compiles to JS with emphasis on immutability and functional design              |
+|              | `Re-frame` / `Reagent`  | Unidirectional reactive architecture powered by data-driven UI                  |
+|              | `shadow-cljs`           | Build tool and seamless JS ecosystem integration                                |
+|              | `cljs-ajax`             | Asynchronous HTTP client for REST API consumption                               |
+| **Backend**  | `Clojure`               | Hosted runtime on the JVM                                                       |
+|              | `Ring` / `Reitit`       | High-performance HTTP server & router with middlewares (`Muuntaja`, `Parameters`)|
+|              | `http-kit`              | Concurrent, high-throughput HTTP/WebSocket server                               |
+|              | `Buddy Hashers`         | Secure credential hashing (bcrypt)                                              |
+|              | `SQLite` (via JDBC)     | Lightweight, persistent on-disk relational database                             |
+| **Realtime** | `WebSocket` (`/api/ws`) | Low-latency channel with active per-operator socket registration                |
 
 ---
 
-## ✨ Características Principales
+## ✨ Key Features
 
-- **Registro de Operadores**: Validación de credenciales en tiempo real (formato de correo, complejidad de encriptación y coincidencia).
-- **Autenticación Segura**: Hash de contraseñas con bcrypt persistido en base de datos SQLite (`holonet_users.db`).
-- **Gestión de Contactos & Amistades**:
-  - Búsqueda y envío de solicitudes de enlace entre operadores.
-  - Gestión de solicitudes entrantes y salientes (Aceptar / Rechazar).
-- **Mensajería en Tiempo Real & Persistencia**:
-  - Canales bidireccionales vía WebSockets.
-  - Historial de mensajes cruzados almacenado en SQLite e indexado por `timestamp`.
-  - Desconexión y limpieza automática de sockets al cerrar sesión para evitar escuchas duplicadas.
-- **Canales de Simulación**: Canales en memoria para pruebas de interfaz rápido en entorno de desarrollo.
+- **Operator Registration**: Real-time credential validation (email format, encryption key complexity, and key confirmation).
+- **Secure Authentication**: Bcrypt password hashing persisted in an SQLite database (`holonet_users.db`).
+- **Contact & Friendship Management**:
+  - Search and send link requests between operators.
+  - Manage incoming and outgoing link requests (Accept / Reject).
+- **Real-Time Messaging & Persistence**:
+  - Bidirectional WebSocket channels.
+  - Cross-operator message history stored in SQLite and indexed by `timestamp`.
+  - Automatic socket cleanup upon logout to avoid duplicate listeners.
+- **Simulation Channels**: In-memory mock channels for swift UI testing in development environments.
 
 ---
 
-## 🛠️ Requisitos Previos
+## 🛠️ Prerequisites
 
-Asegúrate de tener instalados los siguientes componentes en tu sistema:
+Make sure the following tools are installed on your system:
 
 - **JDK 17+**
 - **Clojure CLI** (`clojure`)
@@ -46,11 +46,35 @@ Asegúrate de tener instalados los siguientes componentes en tu sistema:
 
 ---
 
-## 🏁 Instalación y Ejecución
+## 🏁 Installation & Setup
 
-### 1. Clonar el repositorio
+### 1. Clone the repository
 
 ```bash
-git clone [https://github.com/tu-usuario/wmessages-clj-project.git](https://github.com/tu-usuario/wmessages-clj-project.git)
-cd wmessages-clj-project
+git clone https://github.com/your-username/messages-clj-project.git
+cd messages-clj-project
 ```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Start the Backend Server
+
+Start the Clojure Ring/http-kit server (port 3000):
+
+```bash
+clj -M:dev -m server
+```
+
+### 4. Start the Frontend Dev Server
+
+In a separate terminal, launch `shadow-cljs`:
+
+```bash
+npx shadow-cljs watch app
+```
+
+Open your browser at [http://localhost:8080](http://localhost:8080).

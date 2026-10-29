@@ -72,19 +72,19 @@
         email-clean (str/lower-case (str/trim (or email "")))]
     (cond
       (str/blank? name-clean)
-      {:status 400 :body {:success false :message "El identificador de operador es obligatorio"}}
+      {:status 400 :body {:success false :message "Operator identifier is required"}}
 
       (not (email-valid? email-clean))
-      {:status 400 :body {:success false :message "Formato de frecuencia/correo galáctico no válido"}}
+      {:status 400 :body {:success false :message "Invalid galactic frequency/email format"}}
 
       (some #(= (:email %) email-clean) (fetch-users))
-      {:status 409 :body {:success false :message "El correo galáctico ya se encuentra registrado en el sistema"}}
+      {:status 409 :body {:success false :message "Galactic email is already registered in the system"}}
 
       (or (str/blank? password) (< (count password) 6))
-      {:status 400 :body {:success false :message "El código de encriptación debe tener al menos 6 caracteres"}}
+      {:status 400 :body {:success false :message "Encryption key must be at least 6 characters"}}
 
       (not= password password-confirmation)
-      {:status 400 :body {:success false :message "Los códigos de encriptación no coinciden"}}
+      {:status 400 :body {:success false :message "Encryption keys do not match"}}
 
       :else
       (let [password-hashed (hashers/derive password)
@@ -92,14 +92,14 @@
                       :name name-clean
                       :email email-clean
                       :password password-hashed
-                      :rank (if (str/blank? rank) "Oficial de Enlace" rank)
+                      :rank (if (str/blank? rank) "Liaison Officer" rank)
                       :photo-url photo-url
                       :initials (str/upper-case (subs name-clean 0 (min 2 (count name-clean))))
                       :created-at (System/currentTimeMillis)}]
         (insert-user! new-user)
         {:status 201
          :body {:success true
-                :message "Operador registrado en frecuencia correctamente"
+                :message "Operator registered on frequency successfully"
                 :user (dissoc new-user :password)}}))))
 
 (defn login-user [{:keys [email password]}]
@@ -108,8 +108,8 @@
     (if (and user (hashers/check password (:password user)))
       {:status 200
        :body {:success true
-              :message "Enlace de frecuencia establecido correctamente"
+              :message "Frequency link established successfully"
               :user (dissoc user :password)}}
       {:status 401
        :body {:success false
-              :message "Frecuencia o código de encriptación inválidos"}})))
+              :message "Invalid frequency or encryption key"}})))
