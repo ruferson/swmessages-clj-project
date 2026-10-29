@@ -104,3 +104,9 @@
  :settings-open?
  (fn [db _]
    (:settings-open? db)))
+
+;; Sent friend requests waiting for recipient approval
+(rf/reg-sub
+ :sent-friend-requests
+ (fn [db _]
+   (:sent-friend-requests db)))

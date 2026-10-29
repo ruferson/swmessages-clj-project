@@ -1,44 +1,95 @@
 (ns app.views.sidebar
   (:require [app.views.components :refer [avatar-badge]]
+            [app.views.styles :as st]
             [clojure.string :as str]
             [re-frame.core :as rf]))
 
+;; Incoming request item
 (defn request-item [request current-user sending?]
+  [:div {:style {:display "flex"
+                 :align-items "center"
+                 :gap "8px"
+                 :padding "10px 10px"
+                 :margin-bottom "8px"
+                 :background "rgba(255, 255, 255, 0.75)"
+                 :border (str "1px solid " (:border-gold st/colors))
+                 :border-radius "14px"
+                 :box-shadow "0 2px 6px rgba(180, 150, 90, 0.12)"}}
+
+   [avatar-badge {:text (or (:initials request) "OP") :active? false :size "32px"}]
+
+   ;; Info del operador (con ellipsis para no solapar)
+   [:div {:style {:flex "1"
+                  :min-width "0"
+                  :display "flex"
+                  :flex-direction "column"}}
+    [:div {:style {:font-size "12px"
+                   :font-weight "bold"
+                   :color (:text-primary st/colors)
+                   :white-space "nowrap"
+                   :overflow "hidden"
+                   :text-overflow "ellipsis"}}
+     (:name request)]
+    [:div {:style {:font-size "9px"
+                   :color (:text-muted st/colors)
+                   :font-family (:font-mono st/colors)
+                   :white-space "nowrap"
+                   :overflow "hidden"
+                   :text-overflow "ellipsis"}}
+     (str "ID: " (:id request))]]
+
+   ;; Botones de acción alineados e integrados
+   [:div {:style {:display "flex" :gap "4px" :flex-shrink "0"}}
+    [:button {:on-click #(rf/dispatch [:respond-friend-request (:id current-user) (:id request) true])
+              :disabled sending?
+              :style {:padding "5px 8px"
+                      :background (:btn-accept-bg st/colors)
+                      :color (:btn-accept-txt st/colors)
+                      :border (str "1px solid " (:btn-accept-bdr st/colors))
+                      :border-radius "8px"
+                      :font-family (:font-serif st/colors)
+                      :font-size "9px"
+                      :font-weight "bold"
+                      :cursor "pointer"}}
+     "ACEPTAR"]
+    [:button {:on-click #(rf/dispatch [:respond-friend-request (:id current-user) (:id request) false])
+              :disabled sending?
+              :style {:padding "5px 8px"
+                      :background (:btn-reject-bg st/colors)
+                      :color (:btn-reject-txt st/colors)
+                      :border (str "1px solid " (:btn-reject-bdr st/colors))
+                      :border-radius "8px"
+                      :font-family (:font-serif st/colors)
+                      :font-size "9px"
+                      :font-weight "bold"
+                      :cursor "pointer"}}
+     "RECHAZAR"]]])
+
+;; Sent request item (Outbound / Pending)
+(defn sent-request-item [request]
   [:div {:style {:display "flex"
                  :align-items "center"
                  :gap "8px"
                  :padding "8px"
                  :margin-bottom "6px"
-                 :background "#ffffff"
-                 :border "1px solid #e2d1b3"
+                 :background "rgba(255, 255, 255, 0.5)"
+                 :border (str "1px dashed " (:border-gold st/colors))
                  :border-radius "14px"}}
    [avatar-badge {:text (or (:initials request) "OP") :active? false}]
    [:div {:style {:flex "1" :min-width "0"}}
-    [:div {:style {:font-size "12px" :font-weight "bold" :color "#3e2723"}} (:name request)]
-    [:div {:style {:font-size "9px" :color "#8d6e63" :font-weight "600"}} (:email request)]]
-   [:button {:on-click #(rf/dispatch [:respond-friend-request (:id current-user) (:id request) true])
-             :disabled sending?
-             :style {:padding "5px 10px"
-                     :background "#4caf50"
-                     :color "white"
-                     :border "none"
-                     :border-radius "10px"
-                     :font-size "9px"
-                     :font-weight "bold"
-                     :letter-spacing "0.5px"
-                     :cursor "pointer"}} "ACEPTAR"]
-   [:button {:on-click #(rf/dispatch [:respond-friend-request (:id current-user) (:id request) false])
-             :disabled sending?
-             :style {:padding "5px 10px"
-                     :background "#d32f2f"
-                     :color "white"
-                     :border "none"
-                     :border-radius "10px"
-                     :font-size "9px"
-                     :font-weight "bold"
-                     :letter-spacing "0.5px"
-                     :cursor "pointer"}} "RECHAZAR"]])
+    [:div {:style {:font-size "11px" :font-weight "bold" :color (:text-secondary st/colors)}} (:name request)]
+    [:div {:style {:font-size "9px" :color (:text-muted st/colors) :font-weight "600"}} (str "ID: " (:id request))]]
+   [:span {:style {:font-size "8px"
+                   :font-weight "bold"
+                   :padding "3px 6px"
+                   :background "#fff3cd"
+                   :color "#856404"
+                   :border "1px solid #ffeeba"
+                   :border-radius "8px"
+                   :font-family (:font-mono st/colors)}}
+    "PENDIENTE"]])
 
+;; Confirmed contact item
 (defn friend-item [friend current-user]
   [:div {:style {:display "flex"
                  :align-items "center"
@@ -46,25 +97,25 @@
                  :padding "8px"
                  :margin-bottom "8px"
                  :background "rgba(255, 255, 255, 0.65)"
-                 :border "1px solid #e2d1b3"
+                 :border (str "1px solid " (:border-light st/colors))
                  :border-radius "14px"}}
    [avatar-badge {:text (or (:initials friend) "OP") :active? false}]
    [:div {:style {:flex "1" :min-width "0" :margin-left "10px"}}
     [:div {:style {:font-weight "bold"
-                   :color (if (= (:id friend) (:id current-user)) "#3e2723" "#4e342e")
+                   :color (if (= (:id friend) (:id current-user)) (:text-primary st/colors) (:text-secondary st/colors))
                    :font-size "clamp(13px, 1.1vw, 15px)"
                    :white-space "nowrap"
                    :overflow "hidden"
                    :text-overflow "ellipsis"}}
      (:name friend)]
     [:div {:style {:font-size "10px"
-                    :font-weight "600"
-                    :color "#9e9d98"}} (str "ID: " (:id friend))]]
+                   :font-weight "600"
+                   :color "#9e9d98"}} (str "ID: " (:id friend))]]
    [:button {:on-click #(js/navigator.clipboard.writeText (or (:id friend) ""))
              :style {:padding "4px 8px"
-                     :background "#ffe082"
+                     :background (:border-focus st/colors)
                      :color "#4a3800"
-                     :border "1px solid #ffca28"
+                     :border (str "1px solid " (:btn-primary-bdr st/colors))
                      :border-radius "8px"
                      :font-size "8px"
                      :font-weight "bold"
@@ -84,8 +135,8 @@
                                  "linear-gradient(135deg, #fff59d 0%, #ffe082 100%)"
                                  "rgba(255, 255, 255, 0.65)")
                    :border (if active-chat?
-                             "2px solid #ffca28"
-                             "1px solid #e2d1b3")
+                             (str "2px solid " (:btn-primary-bdr st/colors))
+                             (str "1px solid " (:border-light st/colors)))
                    :box-shadow (if active-chat?
                                  "0 4px 14px rgba(255, 193, 7, 0.4)"
                                  "none")
@@ -93,15 +144,13 @@
      [avatar-badge {:text (or (:initials chat) "CP") :active? active-chat?}]
      [:div {:style {:flex "1" :min-width "0" :margin-left "10px"}}
       [:div {:style {:font-weight "bold"
-                     :color (if active-chat? "#3e2723" "#4e342e")
+                     :color (if active-chat? (:text-primary st/colors) (:text-secondary st/colors))
                      :font-size "clamp(13px, 1.1vw, 15px)"
                      :white-space "nowrap"
                      :overflow "hidden"
                      :text-overflow "ellipsis"}}
        (:contact chat)]
-      [:div {:style {:font-size "10px"
-                     :font-weight "600"
-                     :color (if (= (:status chat) "en línea") "#855900" "#9e9d98")}}
+      [:div {:style (st/badge-status (= (:status chat) "en línea"))}
        (str "• " (if (= (:status chat) "en línea") "EN FRECUENCIA" "DESCONECTADO"))]]]))
 
 (defn sidebar-component []
@@ -110,6 +159,7 @@
         current-user @(rf/subscribe [:current-user])
         friends @(rf/subscribe [:friends])
         friend-requests @(rf/subscribe [:friend-requests])
+        sent-friend-requests @(rf/subscribe [:sent-friend-requests])
         friend-id-input @(rf/subscribe [:friend-id-input])
         sending-friend-request? @(rf/subscribe [:sending-friend-request?])
         settings-open? @(rf/subscribe [:settings-open?])]
@@ -117,181 +167,173 @@
                    :min-width "180px"
                    :position "relative"
                    :background "linear-gradient(180deg, #fbf9f3 0%, #f1e7d0 100%)"
-                   :border-right "2px solid #dfcfb2"
+                   :border-right (str "2px solid " (:border-gold st/colors))
                    :box-shadow "inset -4px 0 12px rgba(212, 175, 55, 0.15)"
                    :display "flex"
                    :flex-direction "column"}}
 
-      ;; Header
-      [:div {:style {:padding "clamp(12px, 2vw, 20px) 14px"
-                     :background "linear-gradient(135deg, #fffdf7 0%, #f3e5c8 100%)"
-                     :border-bottom "2px solid #dcc498"
-                     :color "#705315"
-                     :font-family "Georgia, serif"
-                     :font-weight "bold"
-                     :letter-spacing "1px"
-                     :display "flex"
-                     :align-items "center"
-                     :justify-content "space-between"}}
-       [:div {:style {:display "flex" :align-items "center" :gap "6px"}}
-        [:span {:style {:font-size "11px" :letter-spacing "2px" :font-family "monospace"}} "HOLONET // CHANNELS"]]
-       [:span {:style {:font-size "9px"
-                       :padding "2px 6px"
-                       :background "#ffe082"
-                       :border-radius "8px"
-                       :color "#4a3800"
-                       :font-family "monospace"
-                       :font-weight "bold"}} "SEC-9"]]
+     ;; Panel Header
+     [:div {:style {:padding "clamp(12px, 2vw, 20px) 14px"
+                    :background (:bg-header st/colors)
+                    :border-bottom (str "2px solid " (:border-gold st/colors))
+                    :color (:text-gold st/colors)
+                    :font-family (:font-serif st/colors)
+                    :font-weight "bold"
+                    :letter-spacing "1px"
+                    :display "flex"
+                    :align-items "center"
+                    :justify-content "space-between"}}
+      [:div {:style {:display "flex" :align-items "center" :gap "6px"}}
+       [:span {:style {:font-size "11px" :letter-spacing "2px" :font-family (:font-mono st/colors)}} "HOLONET // CHANNELS"]]
+      [:span {:style {:font-size "9px"
+                      :padding "2px 6px"
+                      :background (:border-focus st/colors)
+                      :border-radius "8px"
+                      :color "#4a3800"
+                      :font-family (:font-mono st/colors)
+                      :font-weight "bold"}} "SEC-9"]]
 
-      ;; Friend requests section
-      (when (seq friend-requests)
-        [:div {:style {:padding "10px 12px"
-                       :background "#fdf6e3"
-                       :border-bottom "1px solid #dfcfb2"}}
-         [:div {:style {:font-size "10px"
-                        :font-weight "bold"
-                        :color "#705315"
-                        :letter-spacing "1.5px"
-                        :margin-bottom "8px"}} "SOLICITUDES DE AMISTAD"]
-         (for [request friend-requests]
-           (request-item request current-user sending-friend-request?))])
+     ;; Send Request Input Section
+     [:div {:style {:padding "10px 12px"
+                    :background (:bg-panel st/colors)
+                    :border-bottom (str "1px solid " (:border-light st/colors))}}
+      [:div {:style st/label-title} "AÑADIR OPERADOR"]
+      [:div {:style {:display "flex" :gap "6px" :margin-top "6px"}}
+       [:input {:type "text"
+                :placeholder "ID (Ej. op-171829)"
+                :value friend-id-input
+                :on-change #(rf/dispatch [:update-friend-id (.. % -target -value)])
+                :style (assoc st/input-field :padding "6px 10px" :font-size "10px" :flex "1" :min-width "0")}]
+       [:button {:on-click #(rf/dispatch [:send-friend-request])
+                 :disabled (or sending-friend-request? (str/blank? friend-id-input))
+                 :style (assoc st/action-btn :background (:border-focus st/colors) :color (:text-gold st/colors))}
+        (if sending-friend-request? "..." "+")]]]
 
-      ;; Friends section
-      (when (seq friends)
-        [:div {:style {:flex "1" :overflow-y "auto" :padding "8px"}}
-         [:div {:style {:font-size "10px"
+     ;; Pending Incoming Requests Section
+     (when (seq friend-requests)
+       [:div {:style {:padding "10px 12px"
+                      :background (:bg-panel st/colors)
+                      :border-bottom (str "1px solid " (:border-light st/colors))}}
+        [:div {:style (assoc st/label-title :margin-bottom "8px")} "SOLICITUDES RECIBIDAS"]
+        (for [request friend-requests]
+          ^{:key (:id request)}
+          [request-item request current-user sending-friend-request?])])
+
+     ;; Pending Outgoing Requests Section
+     (when (seq sent-friend-requests)
+       [:div {:style {:padding "10px 12px"
+                      :background "linear-gradient(180deg, #fdf6e3 0%, #f7ebd0 100%)"
+                      :border-bottom (str "1px solid " (:border-light st/colors))}}
+        [:div {:style (assoc st/label-title :margin-bottom "8px")} "SOLICITUDES ENVIADAS"]
+        (for [sent-req sent-friend-requests]
+          ^{:key (:id sent-req)}
+          [sent-request-item sent-req])])
+
+     ;; Confirmed Friends / Contacts Section
+     [:div {:style {:flex "1" :overflow-y "auto" :padding "8px"}}
+      [:div {:style (assoc st/label-title :margin-bottom "8px")} "CONTACTOS EN FRECUENCIA"]
+      (if (seq friends)
+        (for [friend friends]
+          ^{:key (:id friend)}
+          [friend-item friend current-user])
+        [:div {:style {:font-size "11px" :color (:text-muted st/colors) :padding "8px"}} "Sin contactos vinculados."])
+
+      ;; Chat Frequencies List
+      [:div {:style {:margin-top "12px"}}
+       [:div {:style (assoc st/label-title :margin-bottom "8px")} "CANALES DE CHAT"]
+       (for [chat chats]
+         ^{:key (:id chat)}
+         [chat-item chat active-chat-id])]]
+
+     ;; Settings Modal
+     (when settings-open?
+       [:div {:style {:position "absolute"
+                      :top "0"
+                      :right "0"
+                      :bottom "0"
+                      :left "0"
+                      :background "rgba(40, 28, 12, 0.45)"
+                      :z-index "20"
+                      :display "flex"
+                      :align-items "center"
+                      :justify-content "center"}}
+        [:div {:style {:width "min(320px, 85%)"
+                       :background (:bg-card st/colors)
+                       :border (str "2px solid " (:border-gold st/colors))
+                       :border-radius "20px"
+                       :padding "20px"
+                       :display "flex"
+                       :flex-direction "column"
+                       :gap "12px"}}
+         [:div {:style {:font-family (:font-serif st/colors)
+                        :font-size "16px"
                         :font-weight "bold"
-                        :color "#705315"
-                        :letter-spacing "1.5px"
-                        :margin-bottom "8px"}} "CONTACTOS"]
-         (for [friend friends]
-           (friend-item friend current-user))
+                        :color (:text-secondary st/colors)
+                        :text-align "center"}} "CONFIGURACIÓN DE OPERADOR"]
+         [:div {:style {:font-size "11px"
+                        :font-weight "bold"
+                        :color (:text-gold st/colors)
+                        :text-align "center"
+                        :letter-spacing "0.5px"}} (str "ID DE OPERADOR: " (or (:id current-user) ""))]
          [:div {:style {:display "flex"
-                        :gap "6px"
-                        :margin-top "6px"
-                        :padding "8px"
-                        :background "#fdf6e3"
-                        :border "1px dashed #dcc498"
-                        :border-radius "14px"}}
-          [:input {:type "text"
-                   :placeholder "ID DEL OPERADOR (Ej. op-123456)"
-                   :value friend-id-input
-                   :on-change #(rf/dispatch [:update-friend-id (.. % -target -value)])
-                   :style {:flex "1"
-                           :min-width "0"
-                           :padding "6px 10px"
-                           :background "#ffffff"
-                           :border "1px solid #ffe082"
-                           :border-radius "10px"
-                           :color "#3e2723"
-                           :font-size "10px"
-                           :outline "none"}}]
-          [:button {:on-click #(rf/dispatch [:send-friend-request])
-                    :disabled (or sending-friend-request? (str/blank? friend-id-input))
-                    :style {:padding "6px 12px"
-                            :background "#ffe082"
+                        :gap "8px"
+                        :justify-content "center"}}
+          [:button {:on-click #(js/navigator.clipboard.writeText (or (:id current-user) ""))
+                    :style {:padding "8px 14px"
+                            :background (:border-focus st/colors)
                             :color "#4a3800"
-                            :border "1px solid #ffca28"
+                            :border (str "1px solid " (:btn-primary-bdr st/colors))
                             :border-radius "12px"
-                            :font-size "9px"
+                            :font-size "10px"
                             :font-weight "bold"
                             :letter-spacing "0.5px"
-                            :cursor (if sending-friend-request? "wait" "pointer")}} "ENVIAR SOLICITUD"]]])
+                            :cursor "pointer"}} "COPIAR ID"]
+          [:button {:on-click #(rf/dispatch [:toggle-settings])
+                    :style {:padding "8px 14px"
+                            :background "#f6ecd5"
+                            :color (:text-gold st/colors)
+                            :border (str "1px solid " (:border-gold st/colors))
+                            :border-radius "12px"
+                            :font-size "10px"
+                            :font-weight "bold"
+                            :letter-spacing "0.5px"
+                            :cursor "pointer"}} "CERRAR"]]]])
 
-      ;; Frequencies list
-      [:div {:style {:flex "1" :overflow-y "auto" :padding "8px"}}
-       (for [chat chats]
-         (chat-item chat active-chat-id))]
-
-      ;; Settings modal
-      (when settings-open?
-        [:div {:style {:position "absolute"
-                       :top "0"
-                       :right "0"
-                       :bottom "0"
-                       :left "0"
-                       :background "rgba(40, 28, 12, 0.45)"
-                       :z-index "20"
-                       :display "flex"
-                       :align-items "center"
-                       :justify-content "center"}}
-         [:div {:style {:width "min(320px, 85%)"
-                        :background "linear-gradient(180deg, #ffffff 0%, #f6ecd5 100%)"
-                        :border "2px solid #dcc498"
-                        :border-radius "20px"
-                        :padding "20px"
-                        :display "flex"
-                        :flex-direction "column"
-                        :gap "12px"}}
-          [:div {:style {:font-family "Georgia, serif"
-                         :font-size "16px"
+     ;; Sidebar Footer
+     [:div {:style {:padding "12px"
+                    :background "#e8d9bd"
+                    :border-top (str "2px solid " (:border-gold st/colors))
+                    :display "flex"
+                    :align-items "center"
+                    :justify-content "space-between"}}
+      [:div {:style {:display "flex" :align-items "center" :gap "10px"}}
+       [avatar-badge {:photo-url (:photo-url current-user)
+                      :text (:initials current-user)
+                      :active? true
+                      :size "36px"}]
+       [:div {:style {:display "flex" :flex-direction "column"}}
+        [:div {:style {:font-size "12px" :font-weight "bold" :color (:text-primary st/colors)}} (:name current-user)]
+        [:div {:style {:font-size "9px" :color (:text-gold st/colors) :font-weight "600"}} (:rank current-user)]]]
+      [:div {:style {:display "flex" :align-items "center" :gap "8px"}}
+       [:button {:on-click #(rf/dispatch [:toggle-settings])
+                 :style {:padding "6px 10px"
+                         :background "#f6ecd5"
+                         :color (:text-gold st/colors)
+                         :border (str "1px solid " (:border-gold st/colors))
+                         :border-radius "12px"
+                         :font-size "10px"
                          :font-weight "bold"
-                         :color "#5d4037"
-                         :textAlign "center"}} "CONFIGURACIÓN DE OPERADOR"]
-          [:div {:style {:font-size "11px"
+                         :letter-spacing "0.5px"
+                         :cursor "pointer"}}
+        "CONFIG"]
+       [:button {:on-click #(rf/dispatch [:logout])
+                 :style {:padding "6px 10px"
+                         :background (:btn-reject st/colors)
+                         :color "white"
+                         :border "none"
+                         :border-radius "12px"
+                         :font-size "10px"
                          :font-weight "bold"
-                         :color "#705315"
-                         :textAlign "center"
-                         :letter-spacing "0.5px"}} (str "ID DE OPERADOR: " (or (:id current-user) ""))]
-          [:div {:style {:display "flex"
-                         :gap "8px"
-                         :justify-content "center"}}
-           [:button {:on-click #(js/navigator.clipboard.writeText (or (:id current-user) ""))
-                     :style {:padding "8px 14px"
-                             :background "#ffe082"
-                             :color "#4a3800"
-                             :border "1px solid #ffca28"
-                             :border-radius "12px"
-                             :font-size "10px"
-                             :font-weight "bold"
-                             :letter-spacing "0.5px"
-                             :cursor "pointer"}} "COPIAR ID"]
-           [:button {:on-click #(rf/dispatch [:toggle-settings])
-                     :style {:padding "8px 14px"
-                             :background "#f6ecd5"
-                             :color "#705315"
-                             :border "1px solid #dcc498"
-                             :border-radius "12px"
-                             :font-size "10px"
-                             :font-weight "bold"
-                             :letter-spacing "0.5px"
-                             :cursor "pointer"}} "CERRAR"]]]])
-
-      ;; Footer
-      [:div {:style {:padding "12px"
-                     :background "#e8d9bd"
-                     :border-top "2px solid #dcc498"
-                     :display "flex"
-                     :align-items "center"
-                     :justify-content "space-between"}}
-       [:div {:style {:display "flex" :align-items "center" :gap "10px"}}
-        [avatar-badge {:photo-url (:photo-url current-user)
-                       :text (:initials current-user)
-                       :active? true
-                       :size "36px"}]
-        [:div {:style {:display "flex" :flex-direction "column"}}
-         [:div {:style {:font-size "12px" :font-weight "bold" :color "#3e2723"}} (:name current-user)]
-         [:div {:style {:font-size "9px" :color "#705315" :font-weight "600"}} (:rank current-user)]]]
-       [:div {:style {:display "flex" :align-items "center" :gap "8px"}}
-        [:button {:on-click #(rf/dispatch [:toggle-settings])
-                  :style {:padding "6px 10px"
-                          :background "#f6ecd5"
-                          :color "#705315"
-                          :border "1px solid #dcc498"
-                          :border-radius "12px"
-                          :font-size "10px"
-                          :font-weight "bold"
-                          :letter-spacing "0.5px"
-                          :cursor "pointer"}}
-         "CONFIG"]
-        [:button {:on-click #(rf/dispatch [:logout])
-                  :style {:padding "6px 10px"
-                          :background "#d32f2f"
-                          :color "white"
-                          :border "none"
-                          :border-radius "12px"
-                          :font-size "10px"
-                          :font-weight "bold"
-                          :letter-spacing "0.5px"
-                          :cursor "pointer"}}
-          "SALIR"]]]]))
+                         :letter-spacing "0.5px"
+                         :cursor "pointer"}}
+        "SALIR"]]]]))

@@ -230,3 +230,59 @@
  :friend-request-responded-failed
  (fn [db _]
    (assoc db :sending-friend-request? false)))
+
+;; Add handlers for loading sent requests
+(rf/reg-event-fx
+ :load-sent-friend-requests
+ (fn [{:keys [db]} [_ user-id]]
+   (let [uid (or user-id (get-in db [:current-user :id]))]
+     {:http-xhrio {:method          :get
+                   :uri             (str "http://localhost:3000/api/friendship/users/" uid "/sent-requests")
+                   :response-format (ajax/json-response-format {:keywords? true})
+                   :on-success      [:sent-friend-requests-loaded]
+                   :on-failure      [:sent-friend-requests-loaded-failed]}})))
+
+(rf/reg-event-db
+ :sent-friend-requests-loaded
+ (fn [db [_ response]]
+   (assoc db :sent-friend-requests (or (get response :sent-requests) []))))
+
+(rf/reg-event-db
+ :sent-friend-requests-loaded-failed
+ (fn [db _]
+   (assoc db :sent-friend-requests [])))
+
+;; Update :auth-success to fetch sent-friend-requests as well
+(rf/reg-event-fx
+ :auth-success
+ (fn [{:keys [db]} [_ response]]
+   (let [user (get response :user)
+         user-id (:id user)]
+     {:db (-> db
+              (assoc :loading-auth? false)
+              (assoc :authenticated? true)
+              (assoc :current-user user)
+              (assoc-in [:auth-form :password] "")
+              (assoc-in [:auth-form :password-confirmation] ""))
+      :dispatch-n [[:load-friend-requests user-id]
+                   [:load-sent-friend-requests user-id]
+                   [:load-friends user-id]]})))
+
+;; Update :friend-request-sent and :friend-request-responded
+(rf/reg-event-fx
+ :friend-request-sent
+ (fn [{:keys [db]} _]
+   (let [user-id (get-in db [:current-user :id])]
+     {:db (assoc db :sending-friend-request? false :friend-id-input "")
+      :dispatch-n [[:load-friend-requests user-id]
+                   [:load-sent-friend-requests user-id]
+                   [:load-friends user-id]]})))
+
+(rf/reg-event-fx
+ :friend-request-responded
+ (fn [{:keys [db]} _]
+   (let [user-id (get-in db [:current-user :id])]
+     {:db (assoc db :sending-friend-request? false)
+      :dispatch-n [[:load-friend-requests user-id]
+                   [:load-sent-friend-requests user-id]
+                   [:load-friends user-id]]})))

@@ -1,5 +1,6 @@
 (ns app.views.chat
   (:require [app.views.components :refer [avatar-badge]]
+            [app.views.styles :as st]
             [clojure.string :as str]
             [re-frame.core :as rf]))
 
@@ -14,8 +15,8 @@
                    :background "linear-gradient(180deg, #fdfbf7 0%, #f3ebd8 100%)"}}
      ;; Terminal header
      [:div {:style {:padding "12px clamp(14px, 2vw, 24px)"
-                    :background "linear-gradient(180deg, #ffffff 0%, #f6ecd5 100%)"
-                    :border-bottom "2px solid #dcc498"
+                    :background (:bg-card st/colors)
+                    :border-bottom (str "2px solid " (:border-gold st/colors))
                     :display "flex"
                     :align-items "center"
                     :justify-content "space-between"
@@ -24,24 +25,24 @@
        [avatar-badge {:text (or (:initials chat) "CP") :active? true}]
        [:div
         [:div {:style {:font-weight "bold"
-                       :color "#5d4037"
+                       :color (:text-secondary st/colors)
                        :font-size "clamp(15px, 1.4vw, 18px)"
-                       :font-family "Georgia, serif"
+                       :font-family (:font-serif st/colors)
                        :letter-spacing "0.5px"}}
          (:contact chat)]
         [:div {:style {:font-size "10px"
-                       :color "#8d6e63"
+                       :color (:text-muted st/colors)
                        :font-weight "bold"
                        :letter-spacing "1px"}}
          (str "CANAL ENLACE // " (str/upper-case (:status chat)))]]]
 
       [:div {:style {:font-size "10px"
-                     :font-family "monospace"
+                     :font-family (:font-mono st/colors)
                      :padding "4px 8px"
                      :background "rgba(255, 213, 79, 0.3)"
-                     :border "1px solid #ffe082"
+                     :border (str "1px solid " (:border-focus st/colors))
                      :border-radius "6px"
-                     :color "#5d4037"}}
+                     :color (:text-secondary st/colors)}}
        "ENCRIPTACIÓN: CÓDIGO-3"]]
 
      ;; Holographic viewer panel
@@ -63,12 +64,12 @@
                          :background (if mine?
                                        "linear-gradient(135deg, #fff176 0%, #ffd54f 100%)"
                                        "linear-gradient(135deg, #ffffff 0%, #f5efe1 100%)")
-                         :color (if mine? "#3e2723" "#4e342e")
-                         :border (if mine? "1px solid #ffe082" "1px solid #dfd3bd")
+                         :color (if mine? (:text-primary st/colors) "#4e342e")
+                         :border (if mine? (str "1px solid " (:border-focus st/colors)) "1px solid #dfd3bd")
                          :box-shadow (if mine?
                                        "0 4px 14px rgba(255, 213, 79, 0.35)"
                                        "0 2px 8px rgba(0, 0, 0, 0.04)")
-                         :font-family "'Trebuchet MS', sans-serif"}}
+                         :font-family (:font-sans st/colors)}}
            [:div {:style {:font-size "10px"
                           :font-weight "bold"
                           :margin-bottom "3px"
@@ -80,7 +81,7 @@
      ;; Bottom command console
      [:div {:style {:padding "12px clamp(12px, 2vw, 20px)"
                     :background "linear-gradient(180deg, #f6ecd5 0%, #e8d9bd 100%)"
-                    :border-top "2px solid #dcc498"
+                    :border-top (str "2px solid " (:border-gold st/colors))
                     :display "flex"
                     :gap "10px"
                     :align-items "center"}}
@@ -92,22 +93,22 @@
                :style {:flex "1"
                        :min-width "0"
                        :padding "10px 18px"
-                       :background "#ffffff"
-                       :border "2px solid #ffe082"
+                       :background (:bg-input st/colors)
+                       :border (str "2px solid " (:border-focus st/colors))
                        :border-radius "30px"
-                       :color "#3e2723"
+                       :color (:text-primary st/colors)
                        :font-size "clamp(12px, 1vw, 14px)"
-                       :font-family "'Trebuchet MS', sans-serif"
+                       :font-family (:font-sans st/colors)
                        :outline "none"
                        :box-shadow "inset 0 2px 4px rgba(0,0,0,0.03), 0 0 8px rgba(255, 224, 130, 0.5)"}}]
       [:button {:on-click #(rf/dispatch [:send-message])
                 :style {:padding "10px clamp(14px, 2vw, 24px)"
-                        :background "linear-gradient(180deg, #ffe082 0%, #ffb703 100%)"
-                        :color "#3e2723"
-                        :border "2px solid #ffca28"
+                        :background (:btn-primary-bg st/colors)
+                        :color (:text-primary st/colors)
+                        :border (str "2px solid " (:btn-primary-bdr st/colors))
                         :border-radius "30px"
                         :font-size "clamp(12px, 1vw, 14px)"
-                        :font-family "Georgia, serif"
+                        :font-family (:font-serif st/colors)
                         :font-weight "bold"
                         :letter-spacing "1px"
                         :cursor "pointer"
