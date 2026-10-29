@@ -52,5 +52,5 @@ Asegúrate de tener instalados los siguientes componentes en tu sistema:
 
 ```bash
 git clone [https://github.com/tu-usuario/wmessages-clj-project.git](https://github.com/tu-usuario/wmessages-clj-project.git)
-cd holonet
+cd wmessages-clj-project
 ```
